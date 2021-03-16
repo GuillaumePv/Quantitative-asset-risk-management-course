@@ -612,4 +612,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
+.vscode/
+*.DS_Store
+
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudio,pycharm
