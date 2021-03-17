@@ -22,14 +22,15 @@ df = pd.read_excel("Data_HEC_QAM_A1.xlsx", engine='openpyxl')
 df = df.rename(columns={"Unnamed: 0":"date"})
 df['date'] = pd.to_datetime(df['date'],format="%d.%m.%Y")
 
+# Condtion to create the two samples of data
 in_sample = df.loc[(df['date'] <= pd.to_datetime('2017-12-31'))].iloc[:,1:]
 out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]  
 
-num_lines_IS=np.size(in_sample,0);
+num_lines_IS=np.size(in_sample,0)
 simpleReturns_IS=np.divide(in_sample.iloc[2:(num_lines_IS),:],in_sample.iloc[1:(num_lines_IS-1),:])-1
 
 #returns out samples
-num_lines_OS=np.size(out_sample,0);
+num_lines_OS=np.size(out_sample,0)
 simpleReturns_OS=np.divide(out_sample.iloc[2:(num_lines_OS),:],out_sample.iloc[1:(num_lines_OS-1),:])-1
 
 
@@ -50,21 +51,21 @@ def SK_criterion(weight,Lambda_RA,Returns_data):
 
     Returns
     -------
-    criterion : TYPE
+    criterion : Object
         optimal weights of assets in the portfolio.
 
     """
-    portfolio_return=np.multiply(Returns_data,np.transpose(weight));
+    portfolio_return=np.multiply(Returns_data,np.transpose(weight))
     portfolio_return=np.sum(portfolio_return,1)
     mean_ret=np.mean(portfolio_return,0)
     sd_ret=np.std(portfolio_return,0)
     skew_ret=skew(portfolio_return,0)
     kurt_ret=kurtosis(portfolio_return,0)
-    W=1;
-    Wbar=1*(1+0.25/100);
+    W=1
+    Wbar=1*(1+0.25/100)
     # use CRRA function + les dérivées => create A,B,C D => permet de créer la taylor expansion
     criterion=np.power(Wbar,1-Lambda_RA)/(1+Lambda_RA)+np.power(Wbar,-Lambda_RA)*W*mean_ret-Lambda_RA/2*np.power(Wbar,-1-Lambda_RA)*np.power(W,2)*np.power(sd_ret,2)+Lambda_RA*(Lambda_RA+1)/(6)*np.power(Wbar,-2-Lambda_RA)*np.power(W,3)*skew_ret-Lambda_RA*(Lambda_RA+1)*(Lambda_RA+2)/(24)*np.power(Wbar,-3-Lambda_RA)*np.power(W,4)*kurt_ret
-    criterion=-criterion;
+    criterion=-criterion
     return criterion
     
 def EV_criterion(weight,Lambda_RA,Returns_data):
@@ -83,24 +84,24 @@ def EV_criterion(weight,Lambda_RA,Returns_data):
 
     Returns
     -------
-    criterion : TYPE
+    criterion : Object 
         optimal weights of assets in the portfolio.
 
     """
-    portfolio_return=np.multiply(Returns_data,np.transpose(weight));
-    portfolio_return=np.sum(portfolio_return,1);
+    portfolio_return=np.multiply(Returns_data,np.transpose(weight))
+    portfolio_return=np.sum(portfolio_return,1)
     mean_ret=np.mean(portfolio_return,0)
     sd_ret=np.std(portfolio_return,0)
     skew_ret=skew(portfolio_return,0)
     kurt_ret=kurtosis(portfolio_return,0)
-    W=1;
-    Wbar=1*(1+0.25/100);
+    W=1
+    Wbar=1*(1+0.25/100)
     criterion=np.power(Wbar,1-Lambda_RA)/(1+Lambda_RA)+np.power(Wbar,-Lambda_RA)*W*mean_ret-Lambda_RA/2*np.power(Wbar,-1-Lambda_RA)*np.power(W,2)*np.power(sd_ret,2)
     #in order to maximize this formula in need to put negative sign => because we use minimze -> -minimzeer = maximizer
-    criterion=-criterion;
+    criterion=-criterion
     return criterion
 
-#Reulty function of optimizer
+#function to run the two optimizers (EV and SK) in one time
 def Optimizer(returnData):
     """
     
@@ -112,17 +113,17 @@ def Optimizer(returnData):
 
     Returns
     -------
-    res_SK : TYPE
-        DESCRIPTION.
-    res_EV : TYPE
-        DESCRIPTION.
+    res_SK : Object
+        result of mean-variance-skewness-kurtosis optimizer
+    res_EV : Object
+        result of mean-variance optimizer
 
     """
     #starting points => 1% in each stock
     # weight for criterion :)
     x0 = np.array([0, 0, 0, 0, 0])+0.01
     
-    # sum of weight = 1
+    # constraint for weight
     cons=({'type':'eq', 'fun': lambda x:sum(x)-1})
     Bounds= [(0 , 1) for i in range(0,5)] # boudns of weights -> 0 to 1
     
@@ -135,6 +136,24 @@ def Optimizer(returnData):
     return (res_SK,res_EV)
 
 def Stat_descriptive(data,optimal_w):
+    """
+    
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+
+    optimal_w : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    output : Dataframe
+        Dataframe of Descriptive Statistics
+   
+
+    """
+
     exp=np.mean(data,0)*52
     vol=np.std(data,0)*np.power(52,0.5)
     skew_ret=skew(data,0)
@@ -155,6 +174,7 @@ print(test[0].x)
 
 # question 2
 
+## function to  reate the rolling performance for out-sample dataset
 def rollingperf(weight,returns,opt):
     return_test = np.multiply(returns,weight)
     sum_return = np.sum(return_test,1)
@@ -175,10 +195,12 @@ def rollingperf(weight,returns,opt):
     return final_perf
 
 # EV perf
-perf_EV = rollingperf(simpleReturns_OS,EV_w,"EV")
+perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV")
+perf_EV_OS = rollingperf(simpleReturns_OS,EV_w,"EV")
 
 # SK perf
-perf_SK = rollingperf(simpleReturns_OS,SK_w,"SK")
+perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK")
+perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
 
 
 ## Stat descrip EV ##
