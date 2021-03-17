@@ -5,7 +5,9 @@ Created on Fri Mar 12 10:52:47 2021
 
 @author: guillaume
 """
-#import librairies
+
+## Import librairies
+#####################
 import os
 import pandas as pd
 import numpy as np
@@ -16,23 +18,31 @@ import matplotlib.pyplot as plt
 os.chdir("/Users/guillaume/MyProjects/PythonProjects/QARM/Assignements/A1")
 print("Current working directory: {0}".format(os.getcwd()))
 
-# weekly data
+## Importation data
+######################
 df = pd.read_excel("Data_HEC_QAM_A1.xlsx", engine='openpyxl')
 
 df = df.rename(columns={"Unnamed: 0":"date"})
 df['date'] = pd.to_datetime(df['date'],format="%d.%m.%Y")
 
-# Condtion to create the two samples of data
+## Condtion to create the two samples of data
+#############################################
 in_sample = df.loc[(df['date'] <= pd.to_datetime('2017-12-31'))].iloc[:,1:]
 out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]  
 
+## Returns of "in-sample" dataset
+#################################
 num_lines_IS=np.size(in_sample,0)
 simpleReturns_IS=np.divide(in_sample.iloc[2:(num_lines_IS),:],in_sample.iloc[1:(num_lines_IS-1),:])-1
 
-#returns out samples
+## Returns of "out-of-samples" dataset
+######################################
 num_lines_OS=np.size(out_sample,0)
 simpleReturns_OS=np.divide(out_sample.iloc[2:(num_lines_OS),:],out_sample.iloc[1:(num_lines_OS-1),:])-1
 
+####################
+## Optimizer Part ##
+####################
 
 #Optimization function
 def SK_criterion(weight,Lambda_RA,Returns_data):
@@ -101,7 +111,8 @@ def EV_criterion(weight,Lambda_RA,Returns_data):
     criterion=-criterion
     return criterion
 
-#function to run the two optimizers (EV and SK) in one time
+## Function to run the two optimizers (EV and SK) in one time
+#############################################################
 def Optimizer(returnData):
     """
     
@@ -135,6 +146,56 @@ def Optimizer(returnData):
     
     return (res_SK,res_EV)
 
+
+############
+## Part 1 ##
+############
+
+opt = Optimizer(simpleReturns_IS)
+SK_w = opt[0].x
+EV_w = opt[1].x
+
+############
+## Part 2 ##
+############
+
+## function to  reate the rolling performance for out-sample dataset
+#####################################################################
+def rollingperf(weight,returns,opt):
+    return_test = np.multiply(returns,weight)
+    sum_return = np.sum(return_test,1)
+    perf = [100]
+
+    for i in range(len(sum_return)):
+        value = perf[i]*(1+sum_return.values[i])
+        perf.append(value)
+
+    df_perf = pd.DataFrame(perf,columns=["Performance"])
+    df_perf.index = [f'week {v}' for v in df_perf.index]
+    #à refaire car c'est faut => cum return
+    final_perf = sum_return.cumsum()
+    if opt == "EV":
+        df_perf.plot(title="Optimizer EV")
+    else:
+        df_perf.plot(title="Optimizer SK")
+    return final_perf
+
+# EV performance
+################
+perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV") # pas nécessaire
+perf_EV_OS = rollingperf(simpleReturns_OS,EV_w,"EV")
+
+# SK performance
+################
+perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK") #pas nécessaire
+perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
+
+############
+## Part 3 ##
+############
+
+## Function to compute Descriptive Statistics 
+#############################################
 def Stat_descriptive(data,optimal_w):
     """
     
@@ -166,47 +227,12 @@ def Stat_descriptive(data,optimal_w):
     output.index = [i for i in df.iloc[:,1:].columns]
     return output
 
-# Question 1 => voir si pas un beug dans le code :)
-test = Optimizer(simpleReturns_IS)
-SK_w = test[0].x
-EV_w = test[1].x
-print(test[0].x)
-
-# question 2
-
-## function to  reate the rolling performance for out-sample dataset
-def rollingperf(weight,returns,opt):
-    return_test = np.multiply(returns,weight)
-    sum_return = np.sum(return_test,1)
-    perf = [100]
-
-    for i in range(len(sum_return)):
-        value = perf[i]*(1+sum_return.values[i])
-        perf.append(value)
-
-    df_perf = pd.DataFrame(perf,columns=["Performance"])
-    df_perf.index = [f'week {v}' for v in df_perf.index]
-    #à refaire car c'est faut => cum return
-    final_perf = sum_return.cumsum()
-    if opt == "EV":
-        df_perf.plot(title="Optimizer EV")
-    else:
-        df_perf.plot(title="Optimizer SK")
-    return final_perf
-
-# EV perf
-perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV")
-perf_EV_OS = rollingperf(simpleReturns_OS,EV_w,"EV")
-
-# SK perf
-perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK")
-perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
-
-
-## Stat descrip EV ##
+## Descriptive Statistics with EV optimizer
+###########################################
 stat_EV_IS = Stat_descriptive(simpleReturns_IS,EV_w)
 stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w)
 
-## Stat Descrip SK ##
+## Descriptive Statistics with SK optimizer
+###########################################
 stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w)
 stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w)
