@@ -26,7 +26,7 @@ import matplotlib
 
 # Load data
 
-price_asset = pd.read_excel("Data_HEC_QAM_A1.xlsx") # weekly prices
+price_asset = pd.read_excel("Data_HEC_QAM_A1.xlsx",engine="openpyxl") # weekly prices
 
 #Data Info 
 

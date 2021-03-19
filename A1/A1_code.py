@@ -33,12 +33,13 @@ out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]
 ## Returns of "in-sample" dataset
 #################################
 num_lines_IS=np.size(in_sample,0)
-simpleReturns_IS=np.divide(in_sample.iloc[2:(num_lines_IS),:],in_sample.iloc[1:(num_lines_IS-1),:])-1
+simpleReturns_IS=((in_sample/in_sample.shift(1))-1).dropna()
 
 ## Returns of "out-of-samples" dataset
 ######################################
 num_lines_OS=np.size(out_sample,0)
-simpleReturns_OS=np.divide(out_sample.iloc[2:(num_lines_OS),:],out_sample.iloc[1:(num_lines_OS-1),:])-1
+#simpleReturns_OS=np.divide(out_sample.iloc[2:(num_lines_OS),:],out_sample.iloc[1:(num_lines_OS-1),:])-1
+simpleReturns_OS=((out_sample/out_sample.shift(1))-1).dropna()
 
 ####################
 ## Optimizer Part ##
@@ -176,6 +177,7 @@ def rollingperf(weight,returns,opt):
     final_perf = sum_return.cumsum()
     if opt == "EV":
         df_perf.plot(title="Optimizer EV")
+        plt.savefig('fig/EV.png')
     else:
         df_perf.plot(title="Optimizer SK")
     return final_perf
@@ -235,4 +237,6 @@ stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w)
 ## Descriptive Statistics with SK optimizer
 ###########################################
 stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w)
-stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w)
+stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w) 
+
+insam
