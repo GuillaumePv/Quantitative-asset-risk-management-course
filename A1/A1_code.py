@@ -14,6 +14,11 @@ import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+from matplotlib import style
+import seaborn as sns
+import matplotlib.pyplot as plt
+plt.rcParams["figure.figsize"] = (15,10)
+style.use('fivethirtyeight') # librairies stylé
 
 os.chdir("/Users/guillaume/MyProjects/PythonProjects/QARM/Assignements/A1")
 print("Current working directory: {0}".format(os.getcwd()))
@@ -25,10 +30,18 @@ df = pd.read_excel("Data_HEC_QAM_A1.xlsx", engine='openpyxl')
 df = df.rename(columns={"Unnamed: 0":"date"})
 df['date'] = pd.to_datetime(df['date'],format="%d.%m.%Y")
 
+df.index = df['date']
 ## Condtion to create the two samples of data
 #############################################
 in_sample = df.loc[(df['date'] <= pd.to_datetime('2017-12-31'))].iloc[:,1:]
+corr_insample = sns.heatmap(in_sample.corr(),annot=True) #Corrrelation matrix between assets (In-sample)
+corr_insample.set_title("Correlation matrix between assets (In-sample dataset)",pad=20,fontweight='bold')
+plt.savefig("fig/corr_insample.png", bbox_inches = "tight")
+
 out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]  
+corr_outsample = sns.heatmap(in_sample.corr(),annot=True) #Correlation matrix between assets (Out-sample)
+corr_outsample.set_title("Correlation matrix between assets (Out-sample dataset)",pad=20,fontweight='bold')
+plt.savefig("fig/corr_outsample.png", bbox_inches = "tight")
 
 ## Returns of "in-sample" dataset
 #################################
@@ -172,24 +185,37 @@ def rollingperf(weight,returns,opt):
         perf.append(value)
 
     df_perf = pd.DataFrame(perf,columns=["Performance"])
-    df_perf.index = [f'week {v}' for v in df_perf.index]
+    df_perf.index = out_sample.index
     #à refaire car c'est faut => cum return
     final_perf = sum_return.cumsum()
     if opt == "EV":
-        df_perf.plot(title="Optimizer EV")
-        plt.savefig('fig/EV.png')
+        df_perf.plot()
+        plt.ylabel('Performance')
+        plt.xlabel('Date')
+        plt.title(label="Cumul Perf. of Mean-Var portfolio by indexing at 100 in january 2018", 
+          pad=20,
+          fontweight='bold', 
+          color="black")
+        plt.savefig('fig/EV_outsample.png', bbox_inches = "tight")
     else:
-        df_perf.plot(title="Optimizer SK")
+        df_perf.plot()
+        plt.ylabel('Performance')
+        plt.xlabel('Date')
+        plt.title(label="Cumul Perf. of Mean-Var-Skew-Kurt portfolio by indexing at 100 in january 2018", 
+          pad=20,
+          fontweight='bold',
+          color="black")
+        plt.savefig('fig/SK_outsample.png', bbox_inches = "tight")
     return final_perf
 
 # EV performance
 ################
-perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV") # pas nécessaire
+#perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV") # pas nécessaire
 perf_EV_OS = rollingperf(simpleReturns_OS,EV_w,"EV")
 
 # SK performance
 ################
-perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK") #pas nécessaire
+#perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK") #pas nécessaire
 perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
 
 ############
@@ -198,7 +224,7 @@ perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
 
 ## Function to compute Descriptive Statistics 
 #############################################
-def Stat_descriptive(data,optimal_w):
+def Stat_descriptive(data,optimal_w,opt,sample):
     """
     
     Parameters
@@ -227,16 +253,25 @@ def Stat_descriptive(data,optimal_w):
     output = output.transpose()
     output.columns = columns
     output.index = [i for i in df.iloc[:,1:].columns]
+    if opt == "EV":
+        if sample == "IS":
+            output.to_latex("table/IS_EV_stats_decript.tex")
+        else:
+            output.to_latex("table/OS_EV_stats_decript.tex")
+    else:
+        if sample == "IS":
+            output.to_latex("table/IS_SK_stats_decript.tex")
+        else:
+            output.to_latex("table/OS_SK_stats_decript.tex")
     return output
 
 ## Descriptive Statistics with EV optimizer
 ###########################################
-stat_EV_IS = Stat_descriptive(simpleReturns_IS,EV_w)
-stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w)
+stat_EV_IS = Stat_descriptive(simpleReturns_IS,EV_w,"EV","IS")
+stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w,"EV","OS")
 
 ## Descriptive Statistics with SK optimizer
 ###########################################
-stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w)
-stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w) 
+stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w,"SK","IS")
+stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w,"SK","OS") 
 
-insam
