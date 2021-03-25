@@ -16,8 +16,7 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from matplotlib import style
 import seaborn as sns
-import matplotlib.pyplot as plt
-plt.rcParams["figure.figsize"] = (15,10)
+
 style.use('fivethirtyeight') # librairies stylé
 
 os.chdir("/Users/guillaume/MyProjects/PythonProjects/QARM/Assignements/A1")
@@ -31,17 +30,18 @@ df = df.rename(columns={"Unnamed: 0":"date"})
 df['date'] = pd.to_datetime(df['date'],format="%d.%m.%Y")
 
 df.index = df['date']
+
 ## Condtion to create the two samples of data
 #############################################
 in_sample = df.loc[(df['date'] <= pd.to_datetime('2017-12-31'))].iloc[:,1:]
 corr_insample = sns.heatmap(in_sample.corr(),annot=True) #Corrrelation matrix between assets (In-sample)
-corr_insample.set_title("Correlation matrix between assets (In-sample dataset)",pad=20,fontweight='bold')
-plt.savefig("fig/corr_insample.png", bbox_inches = "tight")
+#corr_insample.set_title("Correlation matrix between assets (In-sample dataset)",pad=20,fontweight='bold')
+#plt.savefig("fig/corr_insample.png", bbox_inches = "tight")
 
 out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]  
 corr_outsample = sns.heatmap(in_sample.corr(),annot=True) #Correlation matrix between assets (Out-sample)
-corr_outsample.set_title("Correlation matrix between assets (Out-sample dataset)",pad=20,fontweight='bold')
-plt.savefig("fig/corr_outsample.png", bbox_inches = "tight")
+#corr_outsample.set_title("Correlation matrix between assets (Out-sample dataset)",pad=20,fontweight='bold')
+#plt.savefig("fig/corr_outsample.png", bbox_inches = "tight")
 
 ## Returns of "in-sample" dataset
 #################################
@@ -192,19 +192,19 @@ def rollingperf(weight,returns,opt):
         df_perf.plot()
         plt.ylabel('Performance')
         plt.xlabel('Date')
-        plt.title(label="Cumul Perf. of Mean-Var portfolio by indexing at 100 in january 2018", 
-          pad=20,
-          fontweight='bold', 
-          color="black")
+        # plt.title(label="Cumul Perf. of Mean-Var portfolio by indexing at 100 in january 2018", 
+        #   pad=20,
+        #   fontweight='bold', 
+        #   color="black")
         plt.savefig('fig/EV_outsample.png', bbox_inches = "tight")
     else:
         df_perf.plot()
         plt.ylabel('Performance')
         plt.xlabel('Date')
-        plt.title(label="Cumul Perf. of Mean-Var-Skew-Kurt portfolio by indexing at 100 in january 2018", 
-          pad=20,
-          fontweight='bold',
-          color="black")
+        # plt.title(label="Cumul Perf. of Mean-Var-Skew-Kurt portfolio by indexing at 100 in january 2018", 
+        #   pad=20,
+        #   fontweight='bold',
+        #   color="black")
         plt.savefig('fig/SK_outsample.png', bbox_inches = "tight")
     return final_perf
 
@@ -275,3 +275,24 @@ stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w,"EV","OS")
 stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w,"SK","IS")
 stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w,"SK","OS") 
 
+
+### Other graphs ###
+
+assets_cumul_return = (simpleReturns_OS+1).cumprod()
+assets_cumul_return.plot()
+plt.plot(assets_cumul_return)
+plt.legend(assets_cumul_return.columns,loc='best',fontsize='small')
+plt.ylabel('Performance')
+plt.xlabel('Date')
+plt.savefig('fig/asset_cumul_return.png')
+
+
+
+dfCumulRet = ((df.iloc[:,1:]/df.shift(1).iloc[:,1:] - 1).dropna() + 1).cumprod()
+dfCumulRet = dfCumulRet*100
+plt.plot(dfCumulRet)
+plt.legend(dfCumulRet.columns,loc='best',fontsize='small')
+plt.ylabel('Performance')
+plt.xlabel('Date')
+dfCumulRet.plot()
+plt.savefig('fig/asset_cumul_return_.png')
