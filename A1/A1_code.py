@@ -36,12 +36,12 @@ df.index = df['date']
 in_sample = df.loc[(df['date'] <= pd.to_datetime('2017-12-31'))].iloc[:,1:]
 corr_insample = sns.heatmap(in_sample.corr(),annot=True) #Corrrelation matrix between assets (In-sample)
 #corr_insample.set_title("Correlation matrix between assets (In-sample dataset)",pad=20,fontweight='bold')
-#plt.savefig("fig/corr_insample.png", bbox_inches = "tight")
+plt.savefig("fig/corr_insample.png", bbox_inches = "tight")
 
 out_sample = df.loc[(df['date'] > pd.to_datetime('2017-12-31'))].iloc[:,1:]  
-corr_outsample = sns.heatmap(in_sample.corr(),annot=True) #Correlation matrix between assets (Out-sample)
+corr_outsample = sns.heatmap(out_sample.corr(),annot=True) #Correlation matrix between assets (Out-sample)
 #corr_outsample.set_title("Correlation matrix between assets (Out-sample dataset)",pad=20,fontweight='bold')
-#plt.savefig("fig/corr_outsample.png", bbox_inches = "tight")
+plt.savefig("fig/corr_outsample.png", bbox_inches = "tight")
 
 ## Returns of "in-sample" dataset
 #################################
@@ -275,7 +275,48 @@ stat_EV_OS = Stat_descriptive(simpleReturns_OS,EV_w,"EV","OS")
 stat_SK_IS = Stat_descriptive(simpleReturns_IS,SK_w,"SK","IS")
 stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w,"SK","OS") 
 
+## Compute STD of optimal portfolio ##
 
+#EV
+
+port_return_IS_EV=np.multiply(simpleReturns_IS,np.transpose(EV_w))
+port_return_IS_EV=np.sum(port_return_IS_EV,1)
+exp_IS_EV=np.mean(port_return_IS_EV,0)*52
+sd_re_IS_EV=np.std(port_return_IS_EV,0)*np.power(52,0.5)
+skew_ret_IS_EV=skew(port_return_IS_EV,0)
+kurt_ret_IS_EV=kurtosis(port_return_IS_EV,0)
+
+port_return_OS_EV=np.multiply(simpleReturns_OS,np.transpose(EV_w))
+port_return_OS_EV=np.sum(port_return_OS_EV,1)
+exp_OS_EV=np.mean(port_return_OS_EV,0)*52
+sd_re_OS_EV=np.std(port_return_OS_EV,0)*np.power(52,0.5)
+skew_ret_OS_EV=skew(port_return_OS_EV,0)
+kurt_ret_OS_EV=kurtosis(port_return_OS_EV,0)
+
+sd_data_EV = {"Annualized return":[exp_IS_EV,exp_OS_EV],"Volatility":[sd_re_IS_EV,sd_re_OS_EV],"Skewness":[skew_ret_IS_EV,skew_ret_OS_EV],"Kurtosis":[kurt_ret_IS_EV,kurt_ret_OS_EV]}
+sd_EV = pd.DataFrame(sd_data_EV,index=['Mean-Variance Portfolio','Skew-Kurtosis Portfolio'])
+sd_EV.to_latex("table/comparison_EV.tex")
+
+#SK
+
+port_return_IS_SK=np.multiply(simpleReturns_IS,np.transpose(SK_w))
+port_return_IS_SK=np.sum(port_return_IS_SK,1)
+exp_IS_SK=np.mean(port_return_IS_SK,0)*52
+sd_re_IS_SK=np.std(port_return_IS_SK,0)*np.power(52,0.5)
+skew_ret_IS_SK=skew(port_return_IS_SK,0)
+kurt_ret_IS_SK=kurtosis(port_return_IS_SK,0)
+
+port_return_OS_SK=np.multiply(simpleReturns_OS,np.transpose(SK_w))
+port_return_OS_SK=np.sum(port_return_OS_SK,1)
+exp_OS_SK=np.mean(port_return_OS_SK,0)*52
+sd_re_OS_SK=np.std(port_return_OS_SK,0)*np.power(52,0.5)
+skew_ret_OS_SK=skew(port_return_OS_SK,0)
+kurt_ret_OS_SK=kurtosis(port_return_OS_SK,0)
+
+
+sd_data_SK = {"Annualized return":[exp_IS_SK,exp_OS_SK],"Volatility":[sd_re_IS_SK,sd_re_OS_SK],"Skewness":[skew_ret_IS_SK,skew_ret_OS_SK],"Kurtosis":[kurt_ret_IS_SK,kurt_ret_OS_SK]}
+sd_OS = pd.DataFrame(sd_data_SK,index=['In-sample Portfolio','Out-sample Portfolio'])
+sd_OS.to_latex("table/comparison_SK.tex")
 ### Other graphs ###
 
 assets_cumul_return = (simpleReturns_OS+1).cumprod()
@@ -296,3 +337,12 @@ plt.legend(dfCumulRet.columns,loc='best',fontsize='large')
 plt.ylabel('Performance')
 plt.xlabel('Date')
 plt.savefig('fig/asset_cumul_return_outSample.png')
+
+assets_cumul_return_IS = (simpleReturns_IS+1).cumprod()
+assets_cumul_return_IS = assets_cumul_return_IS*100
+plt.rcParams["figure.figsize"] = (15,10)
+assets_cumul_return_IS.plot()
+plt.legend(assets_cumul_return.columns,loc='upper left',fontsize='large')
+plt.ylabel('Performance')
+plt.xlabel('Date')
+plt.savefig('fig/asset_cumul_return_IN.png')
