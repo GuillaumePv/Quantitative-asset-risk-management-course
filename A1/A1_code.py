@@ -279,9 +279,10 @@ stat_SK_OS = Stat_descriptive(simpleReturns_OS,SK_w,"SK","OS")
 ### Other graphs ###
 
 assets_cumul_return = (simpleReturns_OS+1).cumprod()
+assets_cumul_return = assets_cumul_return*100
+plt.rcParams["figure.figsize"] = (15,10)
 assets_cumul_return.plot()
-plt.plot(assets_cumul_return)
-plt.legend(assets_cumul_return.columns,loc='best',fontsize='small')
+plt.legend(assets_cumul_return.columns,loc='lower left',fontsize='large')
 plt.ylabel('Performance')
 plt.xlabel('Date')
 plt.savefig('fig/asset_cumul_return.png')
@@ -290,9 +291,8 @@ plt.savefig('fig/asset_cumul_return.png')
 
 dfCumulRet = ((df.iloc[:,1:]/df.shift(1).iloc[:,1:] - 1).dropna() + 1).cumprod()
 dfCumulRet = dfCumulRet*100
-plt.plot(dfCumulRet)
-plt.legend(dfCumulRet.columns,loc='best',fontsize='small')
+dfCumulRet.plot()
+plt.legend(dfCumulRet.columns,loc='best',fontsize='large')
 plt.ylabel('Performance')
 plt.xlabel('Date')
-dfCumulRet.plot()
-plt.savefig('fig/asset_cumul_return_.png')
+plt.savefig('fig/asset_cumul_return_outSample.png')
