@@ -51,7 +51,6 @@ simpleReturns_IS=((in_sample/in_sample.shift(1))-1).dropna()
 ## Returns of "out-of-samples" dataset
 ######################################
 num_lines_OS=np.size(out_sample,0)
-#simpleReturns_OS=np.divide(out_sample.iloc[2:(num_lines_OS),:],out_sample.iloc[1:(num_lines_OS-1),:])-1
 simpleReturns_OS=((out_sample/out_sample.shift(1))-1).dropna()
 
 ####################
@@ -210,12 +209,12 @@ def rollingperf(weight,returns,opt):
 
 # EV performance
 ################
-#perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV") # pas nécessaire
+#perf_EV_IS = rollingperf(simpleReturns_IS,EV_w,"EV") # Not necessary
 perf_EV_OS = rollingperf(simpleReturns_OS,EV_w,"EV")
 
 # SK performance
 ################
-#perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK") #pas nécessaire
+#perf_SK_IS = rollingperf(simpleReturns_IS,SK_w,"SK") # Not necessary
 perf_SK_OS = rollingperf(simpleReturns_OS,SK_w,"SK")
 
 ############
@@ -317,8 +316,10 @@ kurt_ret_OS_SK=kurtosis(port_return_OS_SK,0)
 sd_data_SK = {"Annualized return":[exp_IS_SK,exp_OS_SK],"Volatility":[sd_re_IS_SK,sd_re_OS_SK],"Skewness":[skew_ret_IS_SK,skew_ret_OS_SK],"Kurtosis":[kurt_ret_IS_SK,kurt_ret_OS_SK]}
 sd_OS = pd.DataFrame(sd_data_SK,index=['In-sample Portfolio','Out-sample Portfolio'])
 sd_OS.to_latex("table/comparison_SK.tex")
+
 ### Other graphs ###
 
+# cumulative returns of different assets (all dataset)
 assets_cumul_return = (simpleReturns_OS+1).cumprod()
 assets_cumul_return = assets_cumul_return*100
 plt.rcParams["figure.figsize"] = (15,10)
@@ -329,7 +330,7 @@ plt.xlabel('Date')
 plt.savefig('fig/asset_cumul_return.png')
 
 
-
+# cumulative returns of different assets ()
 dfCumulRet = ((df.iloc[:,1:]/df.shift(1).iloc[:,1:] - 1).dropna() + 1).cumprod()
 dfCumulRet = dfCumulRet*100
 dfCumulRet.plot()
