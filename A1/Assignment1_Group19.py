@@ -61,20 +61,20 @@ simpleReturns_OS=((out_sample/out_sample.shift(1))-1).dropna()
 def SK_criterion(weight,Lambda_RA,Returns_data):
     """
     
-    this fucntion computes the expected utility in the MArkowitz case when 
+    this function computes the expected utility in the Markowitz case when 
     investors have a preference for skewness and kurtosis 
     Parameters
     ----------
-    weight : TYPE
+    weight : list of float
         weights in the investor's portfolio.
-    Lambda_RA : TYPE
-        the risk aversion aparameter.
-    Returns_data : TYPE
+    Lambda_RA : int
+        the risk aversion parameter.
+    Returns_data : list of float
         the set of returns.
 
     Returns
     -------
-    criterion : Object
+    criterion : list of float
         optimal weights of assets in the portfolio.
 
     """
@@ -94,20 +94,20 @@ def SK_criterion(weight,Lambda_RA,Returns_data):
 def EV_criterion(weight,Lambda_RA,Returns_data):
     """
     
-    this fucntion computes the expected utility in the MArkowitz case when 
+    this function computes the expected utility in the Markowitz case when 
     investors have a preference for mean and variance
     Parameters
     ----------
-   weight : TYPE
+   weight : list of float
         weights in the investor's portfolio.
-    Lambda_RA : TYPE
-        the risk aversion aparameter.
-    Returns_data : TYPE
+    Lambda_RA : int
+        the risk aversion parameter.
+    Returns_data : list of float
         the set of returns.
 
     Returns
     -------
-    criterion : Object 
+    criterion : list of float 
         optimal weights of assets in the portfolio.
 
     """
@@ -132,8 +132,8 @@ def Optimizer(returnData):
 
     Parameters
     ----------
-    returnData : TYPE
-        DESCRIPTION.
+    returnData : list of float
+        the set of return datas.
 
     Returns
     -------
