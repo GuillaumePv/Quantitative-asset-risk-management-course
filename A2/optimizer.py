@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import skew, kurtosis
+from scipy.optimize import minimize
 
 def SK_criterion(weight,Lambda_RA,Returns_data):
     """
@@ -86,18 +87,19 @@ def Optimizer(returnData,opt='EV'):
     """
     #starting points => 1% in each stock
     # weight for criterion :)
-    x0 = np.array([0, 0, 0, 0, 0])+0.01
+    # à modifier pour être utiliser selon le nombre d'asset
+    x0 = np.array([0, 0, 0])+0.01
     
     # constraint for weight
     cons=({'type':'eq', 'fun': lambda x:sum(x)-1})
-    Bounds= [(0 , 1) for i in range(0,5)] # boudns of weights -> 0 to 1
+    Bounds= [(1e-3 , 1) for i in range(0,3)] # boudns of weights -> 0 to 1
     
     Lambda_RA=3 #define teh risk aversion parameter
     
     if opt=='EV':
-        resultat = minimize(EV_criterion, x0, method='SLSQP', args=(Lambda_RA,np.array(returnData.iloc[:,0:5])),bounds=Bounds,constraints=cons,options={'disp': True})
+        resultat = minimize(EV_criterion, x0, method='SLSQP', args=(Lambda_RA,np.array(returnData.iloc[:,0:3])),bounds=Bounds,constraints=cons,options={'disp': True})
     #res_SK.x: give the optimal weight
     else:
-        resultat = minimize(EV_criterion, x0, method='SLSQP', args=(Lambda_RA,np.array(returnData.iloc[:,0:5])),bounds=Bounds,constraints=cons,options={'disp': True})
+        resultat = minimize(EV_criterion, x0, method='SLSQP', args=(Lambda_RA,np.array(returnData.iloc[:,0:])),bounds=Bounds,constraints=cons,options={'disp': True})
     
     return resultat
