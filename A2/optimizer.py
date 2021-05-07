@@ -91,7 +91,9 @@ def Optimizer(returnData,num_col, opt='EV'):
     x0 = np.array([x for x in range(num_col)])+0.01
     
     # constraint for weight
-    cons=({'type':'eq', 'fun': lambda x:sum(x)-1})
+    cons=({'type':'eq', 'fun': lambda x:sum(x)-1},
+    {'type':'ineq', 'fun': lambda x: x[1]},
+    {'type':'ineq', 'fun': lambda x: x[2]- 0.01})
     Bounds= [(0 , 1) for i in range(0,num_col)] # boudns of weights -> 0 to 1
     
     Lambda_RA=3 #define teh risk aversion parameter
