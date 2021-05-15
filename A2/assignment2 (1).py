@@ -16,11 +16,11 @@ import seaborn as sns
 from numpy.matlib import repmat
 
 #sns.set_theme(style="whitegrid")
-
+#
 #os.chdir("/Users/guillaume/MyProjects/PythonProjects/QARM/assignements/A2/")
 print("Current working directory: {0}".format(os.getcwd()))
 
-df_price = pd.read_excel('Data_QAM2.xlsx', 'Prices')
+df_price = pd.read_excel('Data_QAM2.xlsx', 'Prices', engine='openpyxl')
 df_price.set_index('Dates', inplace=True)
 
 benchmark = pd.DataFrame(data=(0.5*df_price['World Equities'] + 0.5*df_price['World Bonds']))
@@ -28,21 +28,10 @@ benchmark = pd.DataFrame(data=(0.5*df_price['World Equities'] + 0.5*df_price['Wo
 in_sample_price = df_price.loc[(df_price.index <= pd.to_datetime('2010-12-31'))].iloc[:,:]
 out_sample_price = df_price.loc[(df_price.index > pd.to_datetime('2010-12-31'))].iloc[:,:]
 
-is_benchmark = pd.DataFrame({'IS Benchmark': 0.5*in_sample_price['World Equities'] + 0.5*in_sample_price['World Bonds']})
-os_benchmark = pd.DataFrame({'OS Benchmark': 0.5*out_sample_price['World Equities'] + 0.5*out_sample_price['World Bonds']})
-
-#returns_price = ((df_price/df_price.shift(1))-1).dropna()
-#returns_IS_price = ((in_sample_price/in_sample_price.shift(1))-1).dropna()
 returns_price = np.log(df_price/df_price.shift(1)).replace(np.nan, 0)
 returns_IS_price = np.log(in_sample_price/in_sample_price.shift(1)).replace(np.nan, 0)
-#returns_OS_price =((out_sample_price/out_sample_price.shift(1))-1).dropna() 
+
 returns_OS_price = returns_price.loc[(returns_price.index > pd.to_datetime('2010-12-31'))].iloc[:,:]
-
-#benchmark_return_IS = ((is_benchmark/is_benchmark.shift(1))-1).dropna()
-#benchmark_return_OS = ((os_benchmark/os_benchmark.shift(1))-1).dropna()
-
-#benchmark_return_IS = np.log(is_benchmark/is_benchmark.shift(1)).dropna()
-#benchmark_return_OS = np.log(os_benchmark/os_benchmark.shift(1)).dropna()
 
 benchmark_return_IS = pd.DataFrame({'IS Benchmark': 0.5*returns_IS_price['World Equities'] + 0.5*returns_IS_price['World Bonds']})
 benchmark_return_OS = pd.DataFrame({'OS Benchmark': 0.5*returns_OS_price['World Equities'] + 0.5*returns_OS_price['World Bonds']})
@@ -271,7 +260,7 @@ SAA_OS_results = pd.concat([ERC_OS_results, SR_OS_results, MDP_OS_results], axis
 # 2.1
 # =============================================================================
 
-df_carry = pd.read_excel("Data_QAM2.xlsx",sheet_name='Carry')
+df_carry = pd.read_excel("Data_QAM2.xlsx",sheet_name='Carry',engine='openpyxl')
 df_carry.index = df_carry['Unnamed: 0']
 df_carry.index.name = 'date'
 del df_carry['Unnamed: 0']
@@ -360,8 +349,7 @@ mom_IS_scaled = pd.DataFrame({'Momentum': vol_mom_scaled*portofolio_mom})
 value_IS_results = perf(value_IS_scaled['Value'], benchmark_return_IS['IS Benchmark'], 'Value')
 mom_IS_results = perf(mom_IS_scaled['Momentum'], benchmark_return_IS['IS Benchmark'], 'Momentum')
 
-TAA_IS_scaled = pd.DataFrame({'TAA_IS': value_IS_scaled['Value'] + mom_IS_scaled['Momentum']}).dropna()
-#TAA_IS_scaled = TAA_IS_scaled[(TAA_IS_scaled.T != 0).any()]
+TAA_IS_scaled = pd.DataFrame({'TAA_IS': value_IS_scaled['Value'] + mom_IS_scaled['Momentum']}).replace(np.nan, 0)
 
 TAA_IS_results = pd.concat([value_IS_results, mom_IS_results], axis=1)
 TAA_IS_results['Total'] = perf(TAA_IS_scaled['TAA_IS'], benchmark_return_IS['IS Benchmark'], 'TAA_IS')
@@ -370,7 +358,7 @@ TAA_IS_results['Total'] = perf(TAA_IS_scaled['TAA_IS'], benchmark_return_IS['IS 
 # 2.2
 # =============================================================================
 
-df_vix = pd.read_excel("Data_QAM2.xlsx",sheet_name='VIX')
+df_vix = pd.read_excel("Data_QAM2.xlsx",sheet_name='VIX',engine='openpyxl')
 df_vix.set_index('Dates', inplace=True)
 
 df_vix = (df_vix - df_vix.mean())/df_vix.std()
@@ -384,15 +372,11 @@ plt.plot(df_vix_IS['VIX'])
 plt.plot(df_vix_IS['Percentage Change'])
 df_vix_OS = df_vix.loc[(df_vix.index > pd.to_datetime('2010-12-31'))]
 
-#value_IS_scaled = value_IS_scaled[(value_IS_scaled.T != 0).any()]
-#mom_IS_scaled = mom_IS_scaled[(mom_IS_scaled.T != 0).any()]
+corr_value_IS = sns.heatmap(pd.concat([df_vix_IS['VIX'], value_IS_scaled], axis=1).corr(), annot=True)
+corr_mom_IS = sns.heatmap(pd.concat([df_vix_IS['VIX'], mom_IS_scaled], axis=1).corr(), annot=True)
 
 plt.plot(df_vix_IS['VIX'].rolling(10).corr(value_IS_scaled))
 plt.plot(df_vix_IS['VIX'].rolling(10).corr(mom_IS_scaled))
-
-corr_value_IS = sns.heatmap(df_vix_IS['VIX'].rolling(10).corr(value_IS_scaled), annot=True)
-corr_mom_IS = sns.heatmap(pd.concat([df_vix_IS['VIX'], mom_IS_scaled], axis=1).corr(), annot=True)
-corr_TAA_IS =  sns.heatmap(pd.concat([df_vix_IS['VIX'], TAA_IS_scaled ], axis=1).corr(), annot=True)
 
 quantile = df_vix_IS.quantile(q=0.90)
 df_vix_IS['Quantile'] = np.ones(df_vix_IS.shape[0])*quantile.VIX
@@ -401,16 +385,17 @@ plt.plot(df_vix_IS['VIX'], label = 'Standardized VIX')
 plt.plot(df_vix_IS['Quantile'], label = '90% Quantile')
 plt.legend(loc='upper left', frameon=True)
 
+"""
 ###Parametric 
 df_vix_IS.loc[df_vix_IS['VIX'] <= quantile.VIX, 'Long/Short'] = 1 #Expansion
 df_vix_IS.loc[df_vix_IS['VIX'] > quantile.VIX, 'Long/Short'] = -1 #Recession 
 
 lambda_ra=3
-denominator = np.cov(np.transpose(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).dropna()))
-z = repmat(df_vix_IS.iloc[1:, 2], np.size(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).dropna() ,1), 1)
+denominator = np.cov(np.transpose(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).replace(np.nan, 0)))
+z = repmat(df_vix_IS['Long/Short'], np.size(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).replace(np.nan, 0) ,1), 1)
 z = np.transpose(z)
 z = pd.DataFrame(z)
-numerator = np.mean(np.multiply(z, pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).dropna()))
+numerator = np.mean(np.multiply(z, pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).replace(np.nan, 0)))
 
 labels = ['Value', 'Momentum']
 
@@ -422,10 +407,10 @@ plt.title('Optimal Allocation Alpha_t')
 plt.ylabel('Theta')
 plt.tight_layout()
 
-z = repmat(df_vix_IS.iloc[1:, 2], np.size(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).dropna(),1),1)
+z = repmat(df_vix_IS['Long/Short'], np.size(pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).replace(np.nan, 0),1),1)
 z = np.transpose(z)
 z = pd.DataFrame(z)
-prod = np.multiply(z,pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).dropna())
+prod = np.multiply(z,pd.concat([value_IS_scaled, mom_IS_scaled], axis=1).replace(np.nan, 0))
 taa_IS = prod.dot(opt_weights)
 taa_IS = taa_IS/(np.std(taa_IS)*np.power(12,0.5))*0.01
 
@@ -433,6 +418,7 @@ taa_IS = pd.DataFrame({'TAA_IS_VIX': taa_IS, 'Date': mom_IS_scaled.index})
 taa_IS.set_index('Date', inplace=True)
 
 perf(taa_IS, benchmark_return_IS['IS Benchmark'], 'Parametrics')
+"""
 
 ###Simple Strategy###
 """
@@ -444,13 +430,12 @@ df_vix_IS.loc[df_vix_IS['VIX'] > quantile.VIX, 'Value Position'] = -1 #Short Val
 df_vix_IS.loc[df_vix_IS['VIX'] <= quantile.VIX, 'Mom Position'] = 1 #Long Mom
 df_vix_IS.loc[df_vix_IS['VIX'] > quantile.VIX, 'Mom Position'] = -1 #Short Mom
 
-TAA_IS_VIX = pd.DataFrame({'Returns Strategy': value_IS_scaled['Value']*df_vix_IS['Value Position'] + mom_IS_scaled['Momentum']*df_vix_IS['Mom Position']}).dropna()
+TAA_IS_VIX = pd.DataFrame({'Returns Strategy': value_IS_scaled['Value']*df_vix_IS['Value Position'] + mom_IS_scaled['Momentum']*df_vix_IS['Mom Position']}).replace(np.nan, 0)
 
 TAA_IS_VIX_results = perf(TAA_IS_VIX['Returns Strategy'], benchmark_return_IS['IS Benchmark'], 'TAA_IS_VIX')
 
 
 ###Complex Strategy###
-
 
 df_vix_IS.loc[(df_vix_IS['VIX'] <= quantile.VIX), 'Value Position'] = 0.5 #Long Value
 df_vix_IS.loc[(df_vix_IS['VIX'] > quantile.VIX)  & (df_vix_IS['Percentage Change'] >= 0), 'Value Position'] = 0 #Short Value
@@ -460,17 +445,25 @@ df_vix_IS.loc[df_vix_IS['VIX'] <= quantile.VIX, 'Mom Position'] = 0.5 #Long Mom
 df_vix_IS.loc[(df_vix_IS['VIX'] > quantile.VIX)  & (df_vix_IS['Percentage Change'] >= 0), 'Mom Position'] = 1 #Long Value
 df_vix_IS.loc[(df_vix_IS['VIX'] > quantile.VIX) & (df_vix_IS['Percentage Change'] < 0), 'Mom Position'] = -1 #Long Value
 
-TAA_IS_VIX = pd.DataFrame({'Returns Strategy': value_IS_scaled['Value']*df_vix_IS['Value Position'] + mom_IS_scaled['Momentum']*df_vix_IS['Mom Position']}).dropna()
+TAA_IS_VIX = pd.DataFrame({'Returns Strategy': value_IS_scaled['Value']*df_vix_IS['Value Position'] + mom_IS_scaled['Momentum']*df_vix_IS['Mom Position']}).replace(np.nan, 0)
 
 TAA_IS_VIX_results = perf(TAA_IS_VIX['Returns Strategy'], benchmark_return_IS['IS Benchmark'], 'TAA_IS_VIX')
 
+###Information Ratio###
+
+#https://www.jstor.org/stable/4480091?seq=1#metadata_info_tab_contents
+#https://en.wikipedia.org/wiki/Information_ratio
+
+ER_IS = TAA_IS_VIX['Returns Strategy'] - benchmark_return_IS['IS Benchmark']
+
+IR_IS = (np.mean(ER_IS, 0)*12)/np.std(ER_IS, 0)*np.power(12,0.5)
 
 # =============================================================================
 # 2.3
 # =============================================================================
 
 ###Value###
-df_carry_outsample = df_carry[df_carry.index >= pd.to_datetime('2010-12-31')]
+df_carry_outsample = df_carry[df_carry.index > pd.to_datetime('2010-12-31')]
 
 df_carry_outsample_Z = (df_carry_outsample - np.mean(df_carry_outsample))/np.std(df_carry_outsample)
 df_carry_outsample_Z['median'] = df_carry_outsample_Z.median(axis=1)
@@ -523,11 +516,10 @@ value_OS_scaled = pd.DataFrame({'Value': vol_value_scaled*portofolio_value})
 #Source: https://www.youtube.com/watch?v=dnrJ4zwCADM
 
 #Calculate the returns over the past 11 months
-
 returns_past11 = (returns_price+1).rolling(11).apply(np.prod) - 1
 returns_past11 = returns_past11.dropna()
 
-returns_quantile = returns_past11.T.apply(lambda x: pd.qcut(x, 5, labels=False), axis=0).T
+returns_quantile = returns_past11.T.apply(lambda x: pd.qcut(x, 5, labels=False,duplicates='drop'), axis=0).T
 
 for i in returns_quantile.columns:
     returns_quantile.loc[returns_quantile[i] == 4, i] = 0.5
@@ -552,7 +544,6 @@ mom_OS_scaled = vol_mom_scaled*portofolio_mom_OS
 ###Collect the Results###
 value_OS_results = perf(value_OS_scaled['Value'], benchmark_return_OS['OS Benchmark'], 'Value')
 mom_OS_results = perf(mom_OS_scaled['Momentum'], benchmark_return_OS['OS Benchmark'], 'Momentum')
-#TAA_OS_results = pd.concat([value_OS_results, mom_OS_results], axis=1)
 
 ###Out-Sample VIX###
 plt.plot(df_vix_OS['VIX'].rolling(10).corr(value_OS_scaled))
@@ -565,16 +556,17 @@ plt.plot(df_vix_OS['VIX'], label = 'Standardized VIX')
 plt.plot(df_vix_OS['Quantile'], label = '90% Quantile In-Sample')
 plt.legend(loc='upper left', frameon=True)
 
-###Parametric
+"""
+###Parametric 
 df_vix_OS.loc[df_vix_OS['VIX'] <= quantile.VIX, 'Long/Short'] = 1 #Expansion
 df_vix_OS.loc[df_vix_OS['VIX'] > quantile.VIX, 'Long/Short'] = -1 #Recession 
 
 lambda_ra=3
-denominator = np.cov(np.transpose(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).dropna()))
-z = repmat(df_vix_OS.iloc[:, 2], np.size(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).dropna() ,1), 1)
+denominator = np.cov(np.transpose(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).replace(np.nan, 0)))
+z = repmat(df_vix_OS['Long/Short'], np.size(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).replace(np.nan, 0) ,1), 1)
 z = np.transpose(z)
 z = pd.DataFrame(z)
-numerator = np.mean(np.multiply(z, pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).dropna()))
+numerator = np.mean(np.multiply(z, pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).replace(np.nan, 0)))
 
 labels = ['Value', 'Momentum']
 
@@ -586,10 +578,10 @@ plt.title('Optimal Allocation Alpha_t')
 plt.ylabel('Theta')
 plt.tight_layout()
 
-z = repmat(df_vix_OS.iloc[:, 2], np.size(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).dropna() ,1), 1)
+z = repmat(df_vix_OS['Long/Short'], np.size(pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).replace(np.nan, 0) ,1), 1)
 z = np.transpose(z)
 z = pd.DataFrame(z)
-prod = np.multiply(z,pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).dropna())
+prod = np.multiply(z,pd.concat([value_OS_scaled, mom_OS_scaled], axis=1).replace(np.nan, 0))
 taa_OS = prod.dot(opt_weights)
 taa_OS = taa_OS/(np.std(taa_OS)*np.power(12,0.5))*0.01
 
@@ -597,6 +589,7 @@ taa_OS = pd.DataFrame({'TAA_IS_VIX': taa_OS, 'Date': mom_OS_scaled.index})
 taa_OS.set_index('Date', inplace=True)
 
 perf(taa_OS, benchmark_return_OS['OS Benchmark'], 'Parametrics')
+"""
 
 ###Simple Strategy###
 """
@@ -608,8 +601,7 @@ df_vix_OS.loc[df_vix_OS['VIX'] > quantile.VIX, 'Value Position'] = -1 #Short Val
 df_vix_OS.loc[df_vix_OS['VIX'] <= quantile.VIX, 'Mom Position'] = 1 #Long Mom
 df_vix_OS.loc[df_vix_OS['VIX'] > quantile.VIX, 'Mom Position'] = 1 #Short Value
 
-TAA_OS_VIX = pd.DataFrame({'Returns Strategy': value_OS_scaled['Value']*df_vix_OS['Value Position'] + mom_OS_scaled['Momentum']*df_vix_OS['Mom Position']}).dropna()
-
+TAA_OS_VIX = pd.DataFrame({'Returns Strategy': value_OS_scaled['Value']*df_vix_OS['Value Position'] + mom_OS_scaled['Momentum']*df_vix_OS['Mom Position']}).replace(np.nan, 0)
 TAA_OS_VIX_results = perf(TAA_OS_VIX['Returns Strategy'], benchmark_return_OS['OS Benchmark'], 'TAA_OS_VIX')
 
 ###Complex Strategy###
@@ -625,7 +617,7 @@ df_vix_OS.loc[df_vix_OS['VIX'] <= quantile.VIX, 'Mom Position'] = 0.5 #Long Mom
 df_vix_OS.loc[(df_vix_OS['VIX'] > quantile.VIX)  & (df_vix_OS['Percentage Change'] >= 0), 'Mom Position'] = 1 #Long Value
 df_vix_OS.loc[(df_vix_OS['VIX'] > quantile.VIX) & (df_vix_OS['Percentage Change'] < 0), 'Mom Position'] = -1 #Long Value
 
-TAA_OS_VIX = pd.DataFrame({'Returns Strategy': value_OS_scaled['Value']*df_vix_OS['Value Position'] + mom_OS_scaled['Momentum']*df_vix_OS['Mom Position']}).dropna()
+TAA_OS_VIX = pd.DataFrame({'Returns Strategy': value_OS_scaled['Value']*df_vix_OS['Value Position'] + mom_OS_scaled['Momentum']*df_vix_OS['Mom Position']}).replace(np.nan, 0)
 
 TAA_OS_VIX_results = perf(TAA_OS_VIX['Returns Strategy'], benchmark_return_OS['OS Benchmark'], 'TAA_OS_VIX')
 
@@ -635,6 +627,7 @@ TAA_OS_VIX_results = perf(TAA_OS_VIX['Returns Strategy'], benchmark_return_OS['O
 # =============================================================================
 # =============================================================================
 
+"""
 ###ERC Allocation###
 
 x0 = np.array([0, 0, 0, 0, 0, 0, 0])+0.00001
@@ -644,16 +637,6 @@ cons = ({'type':'eq', 'fun': lambda x:sum(x)-1},
       {'type':'eq', 'fun': lambda x: x[2]},
       {'type':'eq', 'fun': lambda x: np.mean(np.sum(np.multiply(returns_IS_price,np.transpose(x)), 1),0)*12 - SAA_IS_results['ERC'].Mean},
       {'type':'eq', 'fun': lambda x: np.std(np.sum(np.multiply(returns_IS_price,np.transpose(x)), 1),0)*np.power(12,0.5) - SAA_IS_results['ERC'].Volatility})
-
-"""
-cons=({'type':'eq', 'fun': lambda x:sum(x)-1},
-      {'type':'ineq', 'fun': lambda x: x[1]-0.01},
-      {'type':'eq', 'fun': lambda x: x[2]},
-      {'type':'eq', 'fun': lambda x: np.mean(np.sum(np.multiply(returns_IS_price,np.transpose(x)), 1),0)*12 - IS_results['ERC'].Mean},
-      {'type':'eq', 'fun': lambda x: np.std(np.sum(np.multiply(returns_IS_price,np.transpose(x)), 1),0)*np.power(12,0.5) - IS_results['ERC'].Volatility},
-      {'type':'eq', 'fun': lambda x: max_drawdown((np.sum(np.multiply(returns_IS_price, np.transpose(x)), 1)+1).cumprod()).min() - IS_results['ERC'].MaxDrawdown},
-      {'type':'eq', 'fun': lambda x: hit_ratio(np.sum(np.multiply(returns_IS_price,np.transpose(x)), 1)) - IS_results['ERC'].HitRatio})
-"""
 
 Bounds = [(0 , 1) for i in range(0,7)]
 
@@ -783,8 +766,9 @@ ERC_OS_results_cons = perf(portfolio_OS_ERC_cons['ERC'], benchmark_return_OS['OS
 SR_OS_results_cons = perf(portfolio_OS_SR_cons['SR'], benchmark_return_OS['OS Benchmark'], 'SR')
 MDP_OS_results_cons = perf(portfolio_OS_MDP_cons['MDP'], benchmark_return_OS['OS Benchmark'], 'MDP')
 SAA_OS_results_cons = pd.concat([ERC_OS_results_cons, SR_OS_results_cons, MDP_OS_results_cons], axis=1)
+"""
 
-###Collect All Weights###
+###Collecting All Weights###
 
 SAA_ERC_weights_IS = pd.DataFrame({'World Equities': np.ones(returns_IS_price.shape[0])*res_ERC.x[0],
                                    'World Bonds': np.ones(returns_IS_price.shape[0])*res_ERC.x[1],
@@ -820,111 +804,138 @@ VIX_weights_OS = pd.DataFrame({'Value Position': df_vix_OS['Value Position'],
 
 TAA_weights_IS = value_weights_IS.multiply(VIX_weights_IS['Value Position'], axis='index') +  mom_weights_IS.multiply(VIX_weights_IS['Mom Position'], axis='index').replace(np.nan, 0)
 
-TAA_weights_OS = (value_weights_OS.multiply(VIX_weights_OS['Value Position'], axis='index') +  mom_weights_OS.multiply(VIX_weights_OS['Mom Position'], axis='index').replace(np.nan, 0)).dropna()
+TAA_weights_OS = (value_weights_OS.multiply(VIX_weights_OS['Value Position'], axis='index') +  mom_weights_OS.multiply(VIX_weights_OS['Mom Position'], axis='index').replace(np.nan, 0))
 
 ptf_target_IS = SAA_ERC_weights_IS + TAA_weights_IS
 
 ptf_target_OS = SAA_ERC_weights_OS + TAA_weights_OS
 
-test = ptf_target_IS.T
-
-sigma_IS = returns_IS_price.cov().values
-
-Sigma=np.cov(np.transpose(returns_IS_price))
-
-x  = np.sum(np.multiply(returns_IS_price, ptf_target_IS), axis=1)
-y  = np.sum(np.multiply(returns_OS_price, ptf_target_OS), axis=1)
-
-plt.plot((y+1).cumprod()*100)
-
-x = ptf_target_IS.iloc[1, :].values
-
-
-def TE(weight_ptf):
+###Tracking Error Formula###
+def TE(x):
     global weight_target
-    global Sigma
+    global sigma
+    weight_ptf = x
     diff_alloc = weight_ptf - weight_target
-    temp =  np.matmul(diff_alloc.T, Sigma)
+    temp =  np.matmul(diff_alloc.T, sigma)
     var_month = np.matmul(temp, diff_alloc)
     vol_month = np.power(var_month, 0.5)
-    output = vol_month*np.power(252, 0.5)
-    return output.item()
+    return vol_month*np.power(12, 0.5)
 
-def ConstraintFullInv(x):
-    return sum(x)-1 
+sigma_IS = returns_IS_price.cov().values
+sigma_OS = returns_OS_price.cov().values
 
-def constraintUS(x):
-    return x[2]-0
+###Ex Ante Tracking Error & Replication Portfolio###
+cons = ({'type':'eq', 'fun': lambda weight_ptf: sum(weight_ptf)-1})
 
-cons = ({'type':'eq', 'fun':ConstraintFullInv},
-{'type':'eq', 'fun':constraintUS}
-)
+Bounds = [(-10 , 10), (-10 , 10), (0 , 0), (-10 , 10), (-10 , 10), (-10 , 10), (-10 , 10)]
 
-Bounds = [(-1 , 1), (-1 , 1), (0 , 0), (-1 , 1), (-1 , 1), (-1 , 1), (-1 , 1)]
+x0 = np.array([0, 0, 0, 0, 0, 0, 0])+0.00001
 
-x0 = np.array([1/6, 1/6, 0, 1/6, 1/6, 1/6, 1/6])
-
-weight_target = x
-#sigma = c
-#TE(x0)
-
-res_TO_control = minimize(TE, x0, method='SLSQP', bounds=Bounds, constraints=cons, options={'disp': True})
-
-ptf_target_IS.iloc[1, :]
-
-array_opt = []
-for i in range(len(ptf_target_IS)):
+weight_opt_IS = []
+TE_IS = []
+for i in range(0, ptf_target_IS.shape[0]):
+    x0 = np.array([0, 0, 0, 0, 0, 0, 0])+0.00001
     weight_target = ptf_target_IS.iloc[i, :].values
-    res_TO_control = minimize(TE, x0, method='SLSQP', bounds=Bounds, constraints=cons, options={'disp': True})
-    array_opt.append(res_TO_control.x)
+    sigma = sigma_IS
+    opt_TE_IS = minimize(TE, x0, method='Powell', bounds=Bounds, constraints=cons, options={'disp': True}) #Powell works
+    weight_opt_IS.append(opt_TE_IS.x)
+    TE_IS.append(opt_TE_IS.fun)
+ 
+TE_IS = pd.DataFrame({'TE_IS': TE_IS}, index = ptf_target_IS.index)
+weight_rep_IS = np.array(weight_opt_IS)
+weight_rep_IS = pd.DataFrame({'World Equities': weight_rep_IS[:, 0],
+                              'World Bonds': weight_rep_IS[:, 1],
+                              'US Investment Grade': weight_rep_IS[:, 2],
+                              'US High Yield': weight_rep_IS[:, 3],
+                              'Gold': weight_rep_IS[:, 4],
+                              'Energy': weight_rep_IS[:, 5],
+                              'Copper': weight_rep_IS[:, 6]}, index = ptf_target_IS.index)
 
-print(array_opt)
+plt.plot(TE_IS)
+plt.title('Ex-Ante Tracking Error between Real Ptf vs. SAA+TAA')
+plt.show()
 
-x_test  = np.sum(np.multiply(returns_IS_price, array_opt), axis=1)
-"""
-def TE_ex_ante(x):
-    global ptf_target_IS
-    global sigma_IS
-    target_opt = ptf_target_IS.values
-    x_temp = target_opt*0
-    #x=pd.DataFrame(x)
-    x_temp[0:7, :] = x
-    #x_temp = ptf_target_IS.loc[:, ptf_target_IS.columns != 'US Investment Grade'].values
-    diff_alloc= np.transpose(x_temp-target_opt)
-    temp1=diff_alloc.dot(sigma_IS)
-    temp2=diff_alloc
-    temp3=np.dot(temp1,temp2);
-    output=np.power(temp3.T,.5)*np.power(252,.5)
-    return output.item()
+return_target_IS  = np.sum(np.multiply(returns_IS_price, ptf_target_IS), axis=1)
+return_rep_IS  = np.sum(np.multiply(returns_IS_price, weight_rep_IS), axis=1)
 
-def ConstraintFullInv(x):
-    return sum(x)-1
+perf_target_IS = perf(return_target_IS, benchmark_return_IS['IS Benchmark'], 'Model')
+perf_rep_IS = perf(return_rep_IS, benchmark_return_IS['IS Benchmark'], 'Replication')
 
-cons = ({'type':'eq', 'fun':ConstraintFullInv})
+plt.plot((return_target_IS+1).cumprod()*100, 'b', label='Model Portfolio')
+plt.plot((return_rep_IS+1).cumprod()*100, 'r', label='Replication Portfolio')
+plt.title('In-Sample Cumulative Returns')
+plt.legend(loc='upper left', frameon=True)
+plt.show()
 
-Bounds = [(0 , 1), (0 , 1), (0 , 0), (0 , 1), (0 , 1), (0 , 1), (0 , 1)]
+###Ex Post Tracking Error & Replication Portfolio###
+cons = ({'type':'eq', 'fun': lambda x: sum(x)-1})
 
-x0 = np.array([0, 0, 0, 0, 0, 0, 0])+(1/7)
+Bounds = [(-10 , 10), (-10 , 10), (0 , 0), (-10 , 10), (-10 , 10), (-10 , 10), (-10 , 10)]
 
-res_TO_control = minimize(TE_ex_ante, x0, method='SLSQP', bounds=Bounds, constraints=cons, options={'disp': True})
+x0 = np.array([0, 0, 0, 0, 0, 0, 0])+0.00001
 
+weight_opt_OS = []
+TE_OS = []
+for i in range(0, ptf_target_OS.shape[0]):
+    x0 = np.array([0, 0, 0, 0, 0, 0, 0])+0.00001
+    weight_target = ptf_target_OS.iloc[i, :].values
+    sigma = sigma_OS
+    opt_TE_OS = minimize(TE, x0, method='Powell', bounds=Bounds, constraints=cons, options={'disp': True}) #Powell works
+    weight_opt_OS.append(opt_TE_OS.x)
+    TE_OS.append(opt_TE_OS.fun)
+ 
+TE_OS = pd.DataFrame({'TE_OS': TE_OS}, index = ptf_target_OS.index)
+weight_rep_OS = np.array(weight_opt_OS)
+weight_rep_OS = pd.DataFrame({'World Equities': weight_rep_OS[:, 0],
+                              'World Bonds': weight_rep_OS[:, 1],
+                              'US Investment Grade': weight_rep_OS[:, 2],
+                              'US High Yield': weight_rep_OS[:, 3],
+                              'Gold': weight_rep_OS[:, 4],
+                              'Energy': weight_rep_OS[:, 5],
+                              'Copper': weight_rep_OS[:, 6]}, index = ptf_target_OS.index)
 
-def TE_ex_ante_n(x):
-    global target
-    global sigma
-    global n
-    target=pd.DataFrame(target)
-    target_opt=target.values
-    x_temp=target_opt*0;
-    x=pd.DataFrame(x);
-    x_temp[0:n,:]=x.values;
-    diff_alloc=np.transpose(x_temp-target_opt);
-    temp1=diff_alloc.dot(sigma)
-    temp2=np.transpose(diff_alloc);
-    temp3=np.dot(temp1,temp2);
-    output=np.power(temp3.T,.5)*np.power(252,.5)
-    return output.item()
+plt.plot(TE_OS)
+plt.title('Ex-Post Tracking Error')
+plt.show()
 
-def ConstraintFullInv(x):
-    return sum(x)-1
-"""
+return_target_OS  = np.sum(np.multiply(returns_OS_price, ptf_target_OS), axis=1)
+return_rep_OS  = np.sum(np.multiply(returns_OS_price, weight_rep_OS), axis=1)
+
+perf_target_OS = perf(return_target_OS, benchmark_return_OS['OS Benchmark'], 'Model')
+perf_rep_OS = perf(return_rep_OS, benchmark_return_OS['OS Benchmark'], 'Replication')
+
+plt.plot((return_target_OS+1).cumprod()*100, 'b', label='Model Portfolio')
+plt.plot((return_rep_OS+1).cumprod()*100, 'r', label='Replication Portfolio')
+plt.title('Out-of-Sample Cumulative Returns')
+plt.legend(loc='upper left', frameon=True)
+plt.show()
+
+###Ex Ante Tracking Error between Target Ptf and SAA###
+
+Tot_TE_SAAvsTarget_IS = []
+for i in range(0, ptf_target_IS.shape[0]):
+    weight_target = ptf_target_IS.iloc[i, :].values
+    sigma = sigma_IS
+    TE_SAAvsTarget_IS = TE(SAA_ERC_weights_IS.iloc[i, :].values)
+    Tot_TE_SAAvsTarget_IS.append(TE_SAAvsTarget_IS)
+ 
+TE_SAAvsTarget_IS = pd.DataFrame({'TE_IS': Tot_TE_SAAvsTarget_IS}, index = ptf_target_IS.index)
+
+plt.plot(TE_SAAvsTarget_IS)
+plt.title('Ex-Ante Tracking Error between SAA vs. SAA+TAA')
+plt.show()
+
+###Ex Post Tracking Error between Target Ptf and SAA###
+
+Tot_TE_SAAvsTarget_OS = []
+for i in range(0, ptf_target_OS.shape[0]):
+    weight_target = ptf_target_OS.iloc[i, :].values
+    sigma = sigma_OS
+    TE_SAAvsTarget_OS = TE(SAA_ERC_weights_OS.iloc[i, :].values)
+    Tot_TE_SAAvsTarget_OS.append(TE_SAAvsTarget_OS)
+ 
+TE_SAAvsTarget_OS = pd.DataFrame({'TE_IS': Tot_TE_SAAvsTarget_OS}, index = ptf_target_OS.index)
+
+plt.plot(TE_SAAvsTarget_OS)
+plt.title('Ex-Post Tracking Error between SAA vs. SAA+TAA')
+plt.show()
