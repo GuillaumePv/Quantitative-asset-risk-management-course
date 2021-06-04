@@ -4,11 +4,11 @@
 
 # TO-DO
 
-- [ ] obtenir les weight SAA / TAA / real Portfolio
-- [ ] ex ante marginal risk
+- [x] obtenir les weight SAA / TAA / real Portfolio
+- [x] ex ante marginal risk
 https://medium.com/python-data/assessing-the-riskiness-of-a-portfolio-with-python-6444c727c474
 
 * VaR
-- [ ] the variance covariance method
-- [ ] historical simulation
-- [ ] age weighted simulation
+- [x] the variance covariance method
+- [x] historical simulation
+- [x] age weighted simulation
